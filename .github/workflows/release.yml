@@ -1,0 +1,159 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build and verify
+    runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Resolve release version
+        id: meta
+        shell: pwsh
+        run: |
+          $base = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($base -notmatch '^\d+\.\d+$') {
+              throw "VERSION must contain a major.minor value, got '$base'."
+          }
+          $version = "$base.${{ github.run_number }}"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Release version: $version"
+
+      - name: Restore
+        run: dotnet restore PkgForge.slnx
+
+      - name: Verify formatting
+        run: dotnet format PkgForge.slnx --verify-no-changes --no-restore
+
+      - name: Run regression suite
+        shell: pwsh
+        run: ./scripts/test.ps1 -Configuration Release
+
+      - name: Build binary release
+        shell: pwsh
+        run: ./scripts/release.ps1 -Version '${{ steps.meta.outputs.version }}' -NoSource
+
+      - name: Verify packaged AOT binary
+        shell: pwsh
+        env:
+          PKGFORGE_CLI_PATH: ${{ github.workspace }}\releases\v${{ steps.meta.outputs.version }}\win-x64\pkgforge.exe
+        run: |
+          & $env:PKGFORGE_CLI_PATH --version
+          dotnet .\tests\PkgForge.Tests\bin\Release\net10.0\PkgForge.Tests.dll
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            releases/pkgforge-${{ steps.meta.outputs.version }}-win-x64.zip
+            releases/release-manifest.json
+            releases/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: replace release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Replace releases and tags
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          repo="$GH_REPO"
+
+          # Remove every existing release. This intentionally removes release
+          # history so the repository exposes only the current build.
+          mapfile -t old_releases < <(
+            gh release list --repo "$repo" --limit 1000 --json tagName --jq '.[].tagName'
+          )
+          for old_tag in "${old_releases[@]:-}"; do
+            if [ -n "$old_tag" ]; then
+              gh release delete "$old_tag" --repo "$repo" --yes --cleanup-tag
+            fi
+          done
+
+          # Remove remaining version tags that were not attached to a release.
+          git fetch --tags --force
+          while IFS= read -r old_tag; do
+            if [ -n "$old_tag" ]; then
+              git push origin --delete "$old_tag" || true
+            fi
+          done < <(git tag -l 'v*')
+
+          {
+            echo "pkgforge $RELEASE_VERSION"
+            echo
+            echo "Windows x64 NativeAOT release."
+            echo
+            echo "## Changes"
+            echo
+            awk 'BEGIN { in_section = 0 } /^## / { if (in_section) exit; in_section = 1 } in_section { print }' CHANGELOG.md
+            echo
+            echo "## Assets"
+            echo
+            echo "- pkgforge-$RELEASE_VERSION-win-x64.zip"
+            echo "- release-manifest.json"
+            echo "- SHA256SUMS.txt"
+            echo
+            echo "The source code for this release is available from the tagged commit."
+            echo "See README.md and SECURITY.md in the source tree."
+          } > release-notes.md
+
+          gh release create "$RELEASE_TAG" \
+            "release-assets/pkgforge-$RELEASE_VERSION-win-x64.zip" \
+            "release-assets/release-manifest.json" \
+            "release-assets/SHA256SUMS.txt" \
+            --repo "$repo" \
+            --target "$GITHUB_SHA" \
+            --title "pkgforge $RELEASE_VERSION" \
+            --notes-file release-notes.md \
+            --latest

@@ -30,7 +30,7 @@ release-manifest.json
 
 `pkgforge.exe` is NativeAOT. The .NET runtime is not required. Debug symbols,
 build intermediates, tests, and the source tree are not included in this binary
-archive. The source archive is distributed separately.
+archive. The source code is available from the tagged repository commit.
 
 ## Configure
 

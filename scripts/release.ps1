@@ -5,7 +5,9 @@ param(
     [string]$Version = '0.4.2',
 
     [ValidateSet('win-x64')]
-    [string]$Runtime = 'win-x64'
+    [string]$Runtime = 'win-x64',
+
+    [switch]$NoSource
 )
 
 Set-StrictMode -Version Latest
@@ -99,13 +101,16 @@ Assert-PkgForgeReleasePathUnder -PkgForgeCandidatePath $PkgForgeReleaseChecksums
 Assert-PkgForgeReleasePathUnder -PkgForgeCandidatePath $PkgForgeReleasePublishDirectoryPath -PkgForgeAllowedRootPath $PkgForgeReleaseArtifactsRootPath -PkgForgePathLabel 'publish directory'
 Assert-PkgForgeReleasePathUnder -PkgForgeCandidatePath $PkgForgeReleaseSourceStagingParentPath -PkgForgeAllowedRootPath $PkgForgeReleaseArtifactsRootPath -PkgForgePathLabel 'source staging directory'
 
-foreach ($existing in @(
-             $PkgForgeReleaseVersionRootPath,
-             $PkgForgeReleaseBinaryZipPath,
-             $PkgForgeReleaseSourceZipPath,
-             $PkgForgeReleaseManifestPath,
-             $PkgForgeReleaseChecksumsPath
-         )) {
+$PkgForgeReleaseExistingPaths = @(
+    $PkgForgeReleaseVersionRootPath,
+    $PkgForgeReleaseBinaryZipPath,
+    $PkgForgeReleaseManifestPath,
+    $PkgForgeReleaseChecksumsPath
+)
+if (-not $NoSource) {
+    $PkgForgeReleaseExistingPaths += $PkgForgeReleaseSourceZipPath
+}
+foreach ($existing in $PkgForgeReleaseExistingPaths) {
     if (Test-Path -LiteralPath $existing) {
         throw "Release output already exists; refusing to overwrite: $existing"
     }
@@ -113,7 +118,9 @@ foreach ($existing in @(
 
 New-Item -ItemType Directory -Path $PkgForgeReleaseArtifactsRootPath -Force | Out-Null
 New-Item -ItemType Directory -Path $PkgForgeReleaseOutputRootPath -Force | Out-Null
-New-Item -ItemType Directory -Path $PkgForgeReleaseSourceRootPath -Force | Out-Null
+if (-not $NoSource) {
+    New-Item -ItemType Directory -Path $PkgForgeReleaseSourceRootPath -Force | Out-Null
+}
 
 $PkgForgeReleasePublishArguments = @(
     'publish',
@@ -126,6 +133,7 @@ $PkgForgeReleasePublishArguments = @(
     '-p:DebugType=None',
     '-p:DebugSymbols=false',
     '-p:CopyOutputSymbolsToPublishDirectory=false',
+    "-p:PkgForgeVersion=$Version",
     '-p:UseSharedCompilation=false',
     '-nodeReuse:false',
     '-o', $PkgForgeReleasePublishDirectoryPath
@@ -198,6 +206,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
     $false
 )
 
+if (-not $NoSource) {
 $PkgForgeReleaseRootFiles = @(
     'README.md',
     'LICENSE',
@@ -207,19 +216,22 @@ $PkgForgeReleaseRootFiles = @(
     'SECURITY.md',
     'THIRD-PARTY-NOTICES.md',
     'CHANGELOG.md',
+    'VERSION',
     'Directory.Build.props',
     'global.json',
     'PkgForge.slnx',
     '.editorconfig',
     '.gitattributes',
     '.gitignore',
-    'pkgforge.config.example.json'
+    'pkgforge.config.example.json',
+    '.github/workflows/release.yml'
 )
 $PkgForgeReleaseDocs = @(
     'docs/ARCHITECTURE.md',
     'docs/OPERATIONS.md',
     'docs/TEST-MATRIX.md',
-    'docs/RELEASE-README.md'
+    'docs/RELEASE-README.md',
+    'docs/CI.md'
 )
 $PkgForgeReleaseScripts = @(
     'scripts/build.ps1',
@@ -270,9 +282,15 @@ Write-PkgForgeChecksums -Path $PkgForgeReleaseSourceManifestPath -Entries $PkgFo
     [System.IO.Compression.CompressionLevel]::Optimal,
     $false
 )
+}
+
+$PkgForgeReleaseArtifactPaths = @($PkgForgeReleaseBinaryZipPath)
+if (-not $NoSource) {
+    $PkgForgeReleaseArtifactPaths += $PkgForgeReleaseSourceZipPath
+}
 
 $PkgForgeReleaseArtifactEntries = [System.Collections.Generic.List[object]]::new()
-foreach ($artifactPath in @($PkgForgeReleaseBinaryZipPath, $PkgForgeReleaseSourceZipPath)) {
+foreach ($artifactPath in $PkgForgeReleaseArtifactPaths) {
     $artifactFile = Get-Item -LiteralPath $artifactPath
     $PkgForgeReleaseArtifactEntries.Add([ordered]@{
         kind = if ($artifactPath -eq $PkgForgeReleaseBinaryZipPath) { 'binary' } else { 'source' }
@@ -296,8 +314,10 @@ Write-PkgForgeChecksums -Path $PkgForgeReleaseChecksumsPath -Entries $PkgForgeRe
 
 Write-Host "[release] binary folder : $PkgForgeReleaseBinaryDirectoryPath"
 Write-Host "[release] binary zip    : $PkgForgeReleaseBinaryZipPath"
-Write-Host "[release] source zip    : $PkgForgeReleaseSourceZipPath"
+if (-not $NoSource) {
+    Write-Host "[release] source zip    : $PkgForgeReleaseSourceZipPath"
+    Write-Host "[release] source files  : $($PkgForgeReleaseSourceEntries.Count)"
+}
 Write-Host "[release] manifest      : $PkgForgeReleaseManifestPath"
 Write-Host "[release] checksums     : $PkgForgeReleaseChecksumsPath"
-Write-Host "[release] source files  : $($PkgForgeReleaseSourceEntries.Count)"
 Write-Host "[release] binary exe    : $((Get-Item -LiteralPath (Join-Path $PkgForgeReleaseBinaryDirectoryPath 'pkgforge.exe')).Length) bytes"

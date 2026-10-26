@@ -171,15 +171,24 @@ separately because it also assembles legal notices and license texts.
 
 ## Release artifacts
 
-A release consists of two archives:
+The workflow and required GitHub permissions are documented in
+[docs/CI.md](docs/CI.md).
+
+A published GitHub release contains:
 
 - `pkgforge-<version>-win-x64.zip` - executable, native SQLite library, example
   configuration, and runtime notices/licenses
-- `pkgforge-<version>-source.zip` - complete source tree, tests, vendored schema
-  fixtures, build scripts, and documentation
+- `release-manifest.json`
+- `SHA256SUMS.txt`
 
-Both archives are listed in the release checksum file. Build outputs, local
-state, test artifacts, editor files, and old release archives are excluded.
+The source code is the tagged commit in the repository; GitHub also exposes the
+standard auto-generated source archives for that tag. Source archives are not
+uploaded as release assets.
+
+The release workflow removes previous releases and `v*` tags before creating the
+new release, so the release page always shows only the current build. The
+workflow is in `.github/workflows/release.yml`; build outputs, local state, test
+artifacts, editor files, and old release archives are excluded from assets.
 
 ## Verification
 

@@ -5,6 +5,9 @@ uses semantic versioning for release labels.
 
 ## 0.4.2
 
+- Added GitHub Actions release automation. Releases now contain only the
+  Windows binary archive, release manifest, and checksum file; source remains
+  available from the tagged repository.
 - Corrected launcher library artifact paths so they are relative to the
   instance `libraries` root. This prevents launchers from resolving
   `libraries/libraries/...` and re-downloading libraries that are already
