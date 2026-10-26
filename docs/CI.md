@@ -142,12 +142,43 @@ If the branch requires review or has protected tags, either allow the workflow
 token to bypass that rule or provide a repository-scoped PAT through
 `RELEASE_TOKEN`.
 
+## Toolchain pinning
+
+The workflow pins the major line of every moving build dependency:
+
+| Component | Pin |
+| --- | --- |
+| Build runner | `windows-2025` |
+| Publish runner | `ubuntu-24.04` |
+| Checkout action | `actions/checkout@v7` |
+| .NET action | `actions/setup-dotnet@v6` |
+| Upload action | `actions/upload-artifact@v7` |
+| Download action | `actions/download-artifact@v8` |
+| .NET SDK | `10.0.x` plus `global.json` |
+
+These are major-version pins. The action repositories may publish compatible
+minor and patch releases within those major tags, but a new major version is a
+deliberate update. The operating-system runner labels are fixed images rather
+than `windows-latest` or `ubuntu-latest`, so an image migration does not change
+the build environment without a workflow change.
+
+The actions listed above run on Node.js 24. No separate Node.js setup is used;
+the runtime comes from the action major version.
+
+The .NET SDK major is 10. `global.json` sets `10.0.100` with
+`rollForward: latestFeature`, so the installed 10.0 feature band and patch are
+selected by the SDK while the major stays fixed.
+
+If a build dependency needs a major upgrade, update it together with a full
+release validation. Do not silently float a major version.
+
 ## AOT
 
-The current job uses `windows-latest`. NativeAOT is platform-specific and must
-run on the target platform. Windows x64 is the only release target currently
-configured. Linux and macOS would require matching runners and
-platform-specific packaging; they are not cross-compiled from Windows.
+The current build job uses `windows-2025`; the publish job uses `ubuntu-24.04`.
+NativeAOT is platform-specific and must run on the target platform. Windows x64
+is the only release target currently configured. Linux and macOS would require
+matching runners and platform-specific packaging; they are not cross-compiled
+from Windows.
 
 If NativeAOT is unavailable on the runner, the build fails before `VERSION` is
 committed and before any release is changed. A framework-dependent fallback
