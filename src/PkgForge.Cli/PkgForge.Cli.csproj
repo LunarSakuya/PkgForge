@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>PkgForge.Cli</RootNamespace>
+    <AssemblyName>pkgforge</AssemblyName>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <PublishSingleFile Condition="'$(PublishAot)' == 'true'">true</PublishSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PkgForge.Core\PkgForge.Core.csproj" />
+    <None Include="..\..\pkgforge.config.example.json"
+          Link="pkgforge.config.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/PkgForge.Core/PkgForge.Core.csproj" />
+  <Project Path="src/PkgForge.Cli/PkgForge.Cli.csproj" />
+  <Project Path="tests/PkgForge.Tests/PkgForge.Tests.csproj" />
+</Solution>

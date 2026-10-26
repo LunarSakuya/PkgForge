@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <!-- Reproducible/offline builds: package contents are pinned and a failed
+         vulnerability-feed lookup must not turn into a compiler error. -->
+    <NuGetAudit>false</NuGetAudit>
+    <RelaySchemaRoot Condition="'$(RelaySchemaRoot)' == ''">$(MSBuildThisFileDirectory)schemas</RelaySchemaRoot>
+  </PropertyGroup>
+
+  <Target Name="PkgForgeGenerateBuildInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_PkgForgeBuildInfoFile>$(IntermediateOutputPath)PkgForgeBuildInfo.g.cs</_PkgForgeBuildInfoFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PkgForgeBuildInfoLine Include="// &lt;auto-generated /&gt;" />
+      <_PkgForgeBuildInfoLine Include="namespace PkgForge%3B" />
+      <_PkgForgeBuildInfoLine Include="internal static class BuildInfo" />
+      <_PkgForgeBuildInfoLine Include="{" />
+      <_PkgForgeBuildInfoLine Include="    internal const string Version = &quot;0.4.0&quot;%3B" />
+      <_PkgForgeBuildInfoLine Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_PkgForgeBuildInfoFile)" Lines="@(_PkgForgeBuildInfoLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(_PkgForgeBuildInfoFile)" Visible="false" />
+      <FileWrites Include="$(_PkgForgeBuildInfoFile)" />
+    </ItemGroup>
+  </Target>
+</Project>
