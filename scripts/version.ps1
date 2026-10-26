@@ -54,6 +54,17 @@ if ($PkgForgeNext -le $PkgForgeCurrent) {
 }
 
 if (-not $DryRun) {
+    $PkgForgeChangelogDirectoryPath = Join-Path $PkgForgeVersionProjectRoot 'changelogs'
+    $PkgForgeChangelogPath = Join-Path $PkgForgeChangelogDirectoryPath "$PkgForgeNextText.md"
+    New-Item -ItemType Directory -Path $PkgForgeChangelogDirectoryPath -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $PkgForgeChangelogPath -PathType Leaf)) {
+        [System.IO.File]::WriteAllText(
+            $PkgForgeChangelogPath,
+            "- TODO: describe the user-visible changes in $PkgForgeNextText.`n",
+            [System.Text.UTF8Encoding]::new($false))
+        Write-Host "Created changelog skeleton: $PkgForgeChangelogPath"
+    }
+
     [System.IO.File]::WriteAllText(
         $PkgForgeVersionPath,
         "$PkgForgeNextText`n",

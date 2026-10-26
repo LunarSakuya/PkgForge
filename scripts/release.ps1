@@ -250,7 +250,7 @@ foreach ($relativePath in $PkgForgeReleaseRootFiles + $PkgForgeReleaseDocs + $Pk
         -DestinationPath (Join-Path $PkgForgeReleaseSourceRootPath $relativePath)
 }
 
-foreach ($directory in @('src', 'tests', 'schemas', 'licenses')) {
+foreach ($directory in @('src', 'tests', 'schemas', 'licenses', 'changelogs')) {
     $sourceDirectory = Join-Path $PkgForgeReleaseProjectRootPath $directory
     if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
         throw "Release source directory is missing: $sourceDirectory"
@@ -269,6 +269,7 @@ foreach ($directory in @('src', 'tests', 'schemas', 'licenses')) {
             'tests' { $extension -in @('.cs', '.csproj') }
             'schemas' { $extension -in @('.sql', '.md') }
             'licenses' { $extension -eq '.txt' }
+            'changelogs' { $extension -eq '.md' }
             default { $false }
         }
         if (-not $allowed) {

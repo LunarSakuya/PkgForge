@@ -17,19 +17,14 @@ concurrency:
 jobs:
   build:
     name: build and verify
-    if: ${{ !contains(github.event.head_commit.message || '', '[skip release]') }}
     runs-on: windows-2025
     timeout-minutes: 45
     outputs:
       version: ${{ steps.meta.outputs.version }}
       tag: ${{ steps.meta.outputs.tag }}
-      release_sha: ${{ steps.commit.outputs.release_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
@@ -38,42 +33,33 @@ jobs:
           cache: true
           cache-dependency-path: '**/*.csproj'
 
-      - name: Resolve next version
+      - name: Verify release metadata
         id: meta
         shell: pwsh
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          $message = $env:COMMIT_MESSAGE
-          if ([string]::IsNullOrWhiteSpace($message)) {
-              $message = 'chore: automated release'
+          $version = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+              throw "VERSION must be a full major.minor.patch value, got '$version'."
           }
 
-          $trailer = [regex]::Match(
-              $message,
-              '(?im)^Version-Bump:\s*(major|minor|patch)\s*$')
-          if ($trailer.Success) {
-              $bump = $trailer.Groups[1].Value.ToLowerInvariant()
+          $changelogPath = Join-Path 'changelogs' "$version.md"
+          if (-not (Test-Path -LiteralPath $changelogPath -PathType Leaf)) {
+              throw "Missing release changelog: $changelogPath"
           }
-          else {
-              $subject = ($message -split '\r?\n')[0]
-              if ($message -match '(?im)^BREAKING CHANGE:' -or
-                  $subject -match '^[A-Za-z][A-Za-z0-9_-]*(\([^)]+\))?!:') {
-                  $bump = 'major'
-              }
-              elseif ($subject -match '^feat(\([^)]+\))?:') {
-                  $bump = 'minor'
-              }
-              else {
-                  $bump = 'patch'
-              }
+          $changelog = Get-Content -LiteralPath $changelogPath -Raw
+          if ([string]::IsNullOrWhiteSpace($changelog) -or $changelog -match 'TODO') {
+              throw "Release changelog is empty or still contains a placeholder: $changelogPath"
           }
 
-          $version = (& ./scripts/version.ps1 -Bump $bump -DryRun).Trim()
-          "bump=$bump" >> $env:GITHUB_OUTPUT
+          $tag = "v$version"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if (-not [string]::IsNullOrWhiteSpace($existingTag)) {
+              throw "Tag $tag already exists. Update VERSION and changelogs/$version.md before pushing."
+          }
+
           "version=$version" >> $env:GITHUB_OUTPUT
-          "tag=v$version" >> $env:GITHUB_OUTPUT
-          Write-Host "Version bump: $bump -> $version"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Release version: $version"
 
       - name: Restore
         run: dotnet restore PkgForge.slnx
@@ -96,23 +82,6 @@ jobs:
         run: |
           & $env:PKGFORGE_CLI_PATH --version
           dotnet .\tests\PkgForge.Tests\bin\Release\net10.0\PkgForge.Tests.dll
-
-      - name: Commit release version
-        id: commit
-        shell: pwsh
-        run: |
-          $version = '${{ steps.meta.outputs.version }}'
-          & ./scripts/version.ps1 -Set $version
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add VERSION
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-              throw 'VERSION did not change after the release build.'
-          }
-          git commit -m "chore(release): v$version [skip release]"
-          git push origin "HEAD:$env:GITHUB_REF_NAME"
-          "release_sha=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
 
       - name: Upload release assets
         uses: actions/upload-artifact@v7
@@ -152,7 +121,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
           RELEASE_TAG: ${{ needs.build.outputs.tag }}
-          RELEASE_SHA: ${{ needs.build.outputs.release_sha }}
         run: |
           set -euo pipefail
           repo="$GH_REPO"
@@ -183,7 +151,7 @@ jobs:
             echo
             echo "## Changes"
             echo
-            awk 'BEGIN { in_section = 0 } /^## / { if (in_section) exit; in_section = 1 } in_section { print }' CHANGELOG.md
+            cat "changelogs/$RELEASE_VERSION.md"
             echo
             echo "## Assets"
             echo
@@ -200,7 +168,7 @@ jobs:
             "release-assets/release-manifest.json" \
             "release-assets/SHA256SUMS.txt" \
             --repo "$repo" \
-            --target "$RELEASE_SHA" \
+            --target "$GITHUB_SHA" \
             --title "pkgforge $RELEASE_VERSION" \
             --notes-file release-notes.md \
             --latest
