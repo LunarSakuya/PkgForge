@@ -34,11 +34,26 @@ internal static class InstallTests
         AssertEx.False(string.IsNullOrWhiteSpace(root.GetProperty("mainClass").GetString()),
             "launcher main class exists");
         AssertEx.True(root.GetProperty("libraries").GetArrayLength() > 0, "launcher libraries exist");
+        foreach (var library in root.GetProperty("libraries").EnumerateArray())
+        {
+            var artifactPath = library.GetProperty("downloads").GetProperty("artifact")
+                .GetProperty("path").GetString();
+            AssertEx.False(string.IsNullOrWhiteSpace(artifactPath), "library artifact path exists");
+            AssertEx.False(artifactPath!.StartsWith("libraries/", StringComparison.OrdinalIgnoreCase),
+                "library path is relative to libraries root");
+            AssertEx.FileExists(Path.Combine(result.Target, "libraries",
+                artifactPath.Replace('/', Path.DirectorySeparatorChar)), "library artifact exists locally");
+        }
+
         AssertEx.True(root.GetProperty("arguments").GetProperty("game").GetArrayLength() > 0,
             "launcher game arguments exist");
         AssertEx.True(root.TryGetProperty("assetIndex", out var assetIndex), "asset index exists");
         AssertEx.True(assetIndex.GetProperty("size").GetInt64() > 0, "asset index size exists");
+        AssertEx.FileExists(Path.Combine(result.Target, "assets", "indexes",
+            assetIndex.GetProperty("id").GetString() + ".json"), "asset index exists locally");
         AssertEx.True(root.GetProperty("downloads").TryGetProperty("client", out _), "client download exists");
+        AssertEx.FileExists(Path.Combine(result.Target, "versions", "26.3", "26.3.jar"),
+            "client jar exists locally");
     }
 
     [PkgTest("Install")]

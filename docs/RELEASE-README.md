@@ -1,4 +1,4 @@
-# pkgforge 0.4.1 - Windows x64 release
+# pkgforge 0.4.2 - Windows x64 release
 
 `pkgforge` is a non-interactive package provisioner. It reads a configured
 SQLite-shard index, verifies declared integrity data, materializes one package
@@ -73,9 +73,9 @@ Quote the entire package argument. In PowerShell, `"1.14 Pre-Release
 Client installs include a launcher version JSON at
 `versions/<version>/<version>.json`. It is generated from the active index:
 main class, libraries, asset index, launch arguments, logging, Java version, and
-native rules. Existing client installs made with 0.4.0 do not have this file;
-re-run the same install with `--force` after upgrading to 0.4.1 to materialize
-it without removing the program root state.
+native rules. Existing client installs made with 0.4.0 or 0.4.1 may have a
+missing or path-incorrect file; re-run the same install with `--force` after
+upgrading to 0.4.2 to materialize it without removing the program root state.
 
 The extracted folder is the program root. `data/` contains the index, database,
 cache, manifests, locks, and managed instances. There is no per-user `.mcpkg`

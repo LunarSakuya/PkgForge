@@ -22,7 +22,7 @@ SQLite shards from the vendored canonical schemas in `schemas/`, uses a local
 authenticated HTTP forward proxy and redirect fixture, and invokes the built CLI
 as a child process for E2E coverage.
 
-The suite was also run against the packaged 0.4.1 AOT executable copied to a
+The suite was also run against the packaged 0.4.2 AOT executable copied to a
 writable temporary program root; all 83 tests passed against that binary.
 
 ## Requirement mapping

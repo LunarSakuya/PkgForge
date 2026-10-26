@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file. The project
 uses semantic versioning for release labels.
 
+## 0.4.2
+
+- Corrected launcher library artifact paths so they are relative to the
+  instance `libraries` root. This prevents launchers from resolving
+  `libraries/libraries/...` and re-downloading libraries that are already
+  present.
+- Removed the redundant client path from generated version JSON.
+
 ## 0.4.1
 
 - Added launcher-facing `versions/<version>/<version>.json` generation for

@@ -60,7 +60,6 @@ public static class LauncherVersionWriter
             {
                 Client = new LauncherDownloadFile
                 {
-                    Path = client.Path,
                     Sha1 = client.Sha1,
                     Size = client.Size,
                     Url = FirstUrl(client),
@@ -80,7 +79,7 @@ public static class LauncherVersionWriter
                 {
                     Artifact = new LauncherDownloadFile
                     {
-                        Path = library.Path,
+                        Path = LibraryArtifactPath(library.Path),
                         Sha1 = library.Sha1,
                         Size = library.Size,
                         Url = FirstUrl(library),
@@ -164,6 +163,12 @@ public static class LauncherVersionWriter
         var url = item.Urls.FirstOrDefault()
                   ?? throw PkgException.Integrity($"No download URL for '{item.Path}'.");
         return url.AbsoluteUri;
+    }
+
+    private static string LibraryArtifactPath(string path)
+    {
+        const string prefix = "libraries/";
+        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? path[prefix.Length..] : path;
     }
 
     private static string NormalizeArgument(string value) =>

@@ -22,7 +22,7 @@
       <_PkgForgeBuildInfoLine Include="namespace PkgForge%3B" />
       <_PkgForgeBuildInfoLine Include="internal static class BuildInfo" />
       <_PkgForgeBuildInfoLine Include="{" />
-      <_PkgForgeBuildInfoLine Include="    internal const string Version = &quot;0.4.1&quot;%3B" />
+      <_PkgForgeBuildInfoLine Include="    internal const string Version = &quot;0.4.2&quot;%3B" />
       <_PkgForgeBuildInfoLine Include="}" />
     </ItemGroup>
     <WriteLinesToFile File="$(_PkgForgeBuildInfoFile)" Lines="@(_PkgForgeBuildInfoLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

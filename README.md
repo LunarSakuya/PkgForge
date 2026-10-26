@@ -10,7 +10,7 @@ files are retrieved only from endpoints referenced by the configured index.
 
 ## Status
 
-- Current release: **0.4.1**
+- Current release: **0.4.2**
 - Prebuilt target: Windows x64, NativeAOT
 - Source: .NET 10, C#
 - Regression suite: 83 tests
