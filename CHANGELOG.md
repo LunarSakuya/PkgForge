@@ -3,11 +3,16 @@
 All notable changes to this project are documented in this file. The project
 uses semantic versioning for release labels.
 
-## 0.4.2
+## Unreleased
+
+The current version is sourced only from `VERSION`. Release headings below are
+historical and are not updated automatically.
 
 - Added GitHub Actions release automation. Releases now contain only the
   Windows binary archive, release manifest, and checksum file; source remains
   available from the tagged repository.
+- Added a single-source semantic version file and monotonic version bump
+  script. The release workflow advances the version from the commit intent.
 - Corrected launcher library artifact paths so they are relative to the
   instance `libraries` root. This prevents launchers from resolving
   `libraries/libraries/...` and re-downloading libraries that are already

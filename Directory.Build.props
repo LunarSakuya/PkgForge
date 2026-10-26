@@ -11,7 +11,8 @@
          vulnerability-feed lookup must not turn into a compiler error. -->
     <NuGetAudit>false</NuGetAudit>
     <RelaySchemaRoot Condition="'$(RelaySchemaRoot)' == ''">$(MSBuildThisFileDirectory)schemas</RelaySchemaRoot>
-    <PkgForgeVersion Condition="'$(PkgForgeVersion)' == ''">0.4.2</PkgForgeVersion>
+    <PkgForgeVersionFile>$(MSBuildThisFileDirectory)VERSION</PkgForgeVersionFile>
+    <PkgForgeVersion Condition="'$(PkgForgeVersion)' == ''">$([System.IO.File]::ReadAllText('$(PkgForgeVersionFile)').Trim())</PkgForgeVersion>
   </PropertyGroup>
 
   <Target Name="PkgForgeGenerateBuildInfo" BeforeTargets="CoreCompile">

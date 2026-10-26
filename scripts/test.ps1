@@ -4,6 +4,8 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
 
+    [string]$Version = '',
+
     [string]$Filter = '',
 
     [switch]$KeepArtifacts
@@ -25,6 +27,9 @@ $PkgForgeBuildArguments = @(
     '-p:UseSharedCompilation=false',
     '-nodeReuse:false'
 )
+if (-not [string]::IsNullOrWhiteSpace($Version)) {
+    $PkgForgeBuildArguments += "-p:PkgForgeVersion=$Version"
+}
 Write-Host "[test] dotnet $($PkgForgeBuildArguments -join ' ')"
 & dotnet @PkgForgeBuildArguments
 if ($LASTEXITCODE -ne 0) {

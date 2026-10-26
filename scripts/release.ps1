@@ -1,8 +1,7 @@
 #Requires -Version 7.0
 [CmdletBinding()]
 param(
-    [ValidatePattern('^[0-9A-Za-z][0-9A-Za-z._-]{0,31}$')]
-    [string]$Version = '0.4.2',
+    [string]$Version = '',
 
     [ValidateSet('win-x64')]
     [string]$Runtime = 'win-x64',
@@ -15,6 +14,12 @@ $ErrorActionPreference = 'Stop'
 
 $PkgForgeReleaseScriptDirectoryPath = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $PkgForgeReleaseProjectRootPath = [System.IO.Path]::GetFullPath((Join-Path $PkgForgeReleaseScriptDirectoryPath '..'))
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = (Get-Content -LiteralPath (Join-Path $PkgForgeReleaseProjectRootPath 'VERSION') -Raw).Trim()
+}
+if ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    throw "Version must be a full major.minor.patch value, got '$Version'."
+}
 $PkgForgeReleaseArtifactsRootPath = [System.IO.Path]::GetFullPath((Join-Path $PkgForgeReleaseProjectRootPath '.artifacts'))
 $PkgForgeReleaseOutputRootPath = [System.IO.Path]::GetFullPath((Join-Path $PkgForgeReleaseProjectRootPath 'releases'))
 $PkgForgeReleaseVersionRootPath = [System.IO.Path]::GetFullPath((Join-Path $PkgForgeReleaseOutputRootPath "v$Version"))
@@ -236,7 +241,8 @@ $PkgForgeReleaseDocs = @(
 $PkgForgeReleaseScripts = @(
     'scripts/build.ps1',
     'scripts/test.ps1',
-    'scripts/release.ps1'
+    'scripts/release.ps1',
+    'scripts/version.ps1'
 )
 
 foreach ($relativePath in $PkgForgeReleaseRootFiles + $PkgForgeReleaseDocs + $PkgForgeReleaseScripts) {
