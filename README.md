@@ -10,10 +10,10 @@ files are retrieved only from endpoints referenced by the configured index.
 
 ## Status
 
-- Current release: **0.4.0**
+- Current release: **0.4.1**
 - Prebuilt target: Windows x64, NativeAOT
 - Source: .NET 10, C#
-- Regression suite: 82 tests
+- Regression suite: 83 tests
 
 The source uses portable .NET APIs, but the published binary and the release
 scripts are validated on Windows. Linux and macOS builds are not part of this
@@ -126,9 +126,10 @@ program root for tests or prepared deployments. It is not a user-profile state
 location, and no hidden per-user directory is used.
 
 Managed installations are recorded in `data/manifests/<install-id>.json` and
-default to `data/instances/<install-id>`. A managed `--dir` must be a relative
-path below `data/instances`. An existing non-empty target requires `--force` and
-a matching in-folder marker.
+default to `data/instances/<install-id>`. Client installs also receive a
+launcher-readable `versions/<version>/<version>.json` built from the active
+index. A managed `--dir` must be a relative path below `data/instances`. An
+existing non-empty target requires `--force` and a matching in-folder marker.
 
 `--unmanaged` and `--download-only` are an explicit export boundary. They require
 a target outside the program root and outside pkgforge state, create no marker or

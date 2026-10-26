@@ -152,6 +152,12 @@ public sealed class InstallService
             await CopyAssetLinksAsync(plan, stagingPath, records, cancellationToken).ConfigureAwait(false);
             var nativeCount = await ExtractNativesAsync(plan, stagingPath, records, cancellationToken)
                 .ConfigureAwait(false);
+            var launcherVersion = await LauncherVersionWriter.WriteAsync(stagingPath, plan, _log, cancellationToken)
+                .ConfigureAwait(false);
+            if (launcherVersion is not null)
+            {
+                AddRecord(records, launcherVersion);
+            }
 
             var marker = new InstallMarker
             {
@@ -641,6 +647,8 @@ public sealed class InstallService
                 .ConfigureAwait(false);
             await CopyAssetLinksAsync(plan, stagingPath, records, cancellationToken).ConfigureAwait(false);
             await ExtractNativesAsync(plan, stagingPath, records, cancellationToken).ConfigureAwait(false);
+            await LauncherVersionWriter.WriteAsync(stagingPath, plan, _log, cancellationToken)
+                .ConfigureAwait(false);
             PathSafety.EnsureTreeHasNoReparsePoints(stagingPath, "unmanaged staging");
             if (File.Exists(target) || Directory.Exists(target))
             {

@@ -43,6 +43,9 @@ public static class JsonCodec
     public static string SerializeInstallMarker(InstallMarker marker) =>
         JsonSerializer.Serialize(marker, PkgForgeJsonContext.Default.InstallMarker);
 
+    public static string SerializeLauncherVersion(LauncherVersionJson version) =>
+        JsonSerializer.Serialize(version, PkgForgeJsonContext.Default.LauncherVersionJson);
+
     public static InstallMarker? DeserializeInstallMarker(string json) =>
         JsonSerializer.Deserialize(json, PkgForgeJsonContext.Default.InstallMarker);
 }

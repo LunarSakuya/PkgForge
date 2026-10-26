@@ -17,6 +17,31 @@ internal static class InstallTests
     }
 
     [PkgTest("Install")]
+    public static async Task LauncherVersionJsonIsGenerated(TestSandbox sandbox)
+    {
+        await using var harness = await InstallTestHarness.CreateAsync(sandbox).ConfigureAwait(false);
+        var result = await harness.InstallAsync("26.3@client:windows-x64").ConfigureAwait(false);
+        var jsonPath = Path.Combine(result.Target, "versions", "26.3", "26.3.json");
+        AssertEx.FileExists(jsonPath, "launcher version JSON exists");
+        AssertEx.True(result.Manifest.Files.Any(file => file.Role == "launcher-json"),
+            "launcher JSON is recorded in the manifest");
+
+        using var document = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(jsonPath)
+            .ConfigureAwait(false));
+        var root = document.RootElement;
+        AssertEx.Equal("26.3", root.GetProperty("id").GetString(), "launcher version id");
+        AssertEx.Equal("release", root.GetProperty("type").GetString(), "launcher version type");
+        AssertEx.False(string.IsNullOrWhiteSpace(root.GetProperty("mainClass").GetString()),
+            "launcher main class exists");
+        AssertEx.True(root.GetProperty("libraries").GetArrayLength() > 0, "launcher libraries exist");
+        AssertEx.True(root.GetProperty("arguments").GetProperty("game").GetArrayLength() > 0,
+            "launcher game arguments exist");
+        AssertEx.True(root.TryGetProperty("assetIndex", out var assetIndex), "asset index exists");
+        AssertEx.True(assetIndex.GetProperty("size").GetInt64() > 0, "asset index size exists");
+        AssertEx.True(root.GetProperty("downloads").TryGetProperty("client", out _), "client download exists");
+    }
+
+    [PkgTest("Install")]
     public static async Task SuccessfulManagedReinstallReplacesFolder(TestSandbox sandbox)
     {
         await using var harness = await InstallTestHarness.CreateAsync(sandbox).ConfigureAwait(false);

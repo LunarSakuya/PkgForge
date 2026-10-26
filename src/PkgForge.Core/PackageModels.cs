@@ -23,6 +23,8 @@ public sealed record PackageListResult(IReadOnlyList<PackageRow> Rows, int Total
 
 public sealed record AssetLinkOperation(string FromPath, string ToPath);
 
+public sealed record LaunchArgument(string Phase, string Value);
+
 public sealed record ResolvedPlan(
     int PlanId,
     string VersionId,
@@ -40,7 +42,20 @@ public sealed record ResolvedPlan(
     IReadOnlyList<DownloadItem> Downloads,
     IReadOnlyList<AssetLinkOperation> Links,
     IReadOnlyList<string> Directories,
-    IReadOnlyList<string> ExtractExcludes)
+    IReadOnlyList<string> ExtractExcludes,
+    string? MainClass = null,
+    string? AssetsSha1 = null,
+    long? AssetsTotalSize = null,
+    string? LoggingArgument = null,
+    string? LoggingPath = null,
+    int JavaMajor = 0,
+    string ReleaseTime = "",
+    IReadOnlyList<string>? Classpath = null,
+    IReadOnlyList<LaunchArgument>? LaunchArguments = null)
 {
     public int DownloadCount => Downloads.Count;
+
+    public IReadOnlyList<string> ClasspathFiles => Classpath ?? [];
+
+    public IReadOnlyList<LaunchArgument> LauncherArguments => LaunchArguments ?? [];
 }

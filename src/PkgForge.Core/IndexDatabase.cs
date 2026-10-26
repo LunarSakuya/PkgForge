@@ -164,12 +164,20 @@ public sealed class IndexDatabase
         string? assetsRoot;
         long? assetsSize;
         string? nativeDirectory;
+        string? mainClass;
+        string? assetsSha1;
+        string? loggingArgument;
+        string? loggingPath;
+        int javaMajor;
+        string releaseTime;
         using (var command = catalog.CreateCommand())
         {
             command.CommandText = """
                                   SELECT p.id, p.total_bytes, p.assets_index, p.assets_mode, p.assets_root,
-                                         p.assets_size, n.dir
+                                         p.assets_size, n.dir, p.main_class, p.assets_sha1,
+                                         p.logging_argument, p.logging_path, v.java_major, v.release_time
                                   FROM plans p
+                                  JOIN versions v ON v.id = p.version_id
                                   LEFT JOIN natives n ON n.plan_id = p.id
                                   WHERE p.version_id = $version AND p.kind = $kind AND p.platform = $platform;
                                   """;
@@ -192,6 +200,12 @@ public sealed class IndexDatabase
             assetsRoot = reader.IsDBNull(4) ? null : reader.GetString(4);
             assetsSize = reader.IsDBNull(5) ? null : reader.GetInt64(5);
             nativeDirectory = reader.IsDBNull(6) ? null : reader.GetString(6);
+            mainClass = reader.IsDBNull(7) ? null : reader.GetString(7);
+            assetsSha1 = reader.IsDBNull(8) ? null : reader.GetString(8);
+            loggingArgument = reader.IsDBNull(9) ? null : reader.GetString(9);
+            loggingPath = reader.IsDBNull(10) ? null : reader.GetString(10);
+            javaMajor = checked((int)reader.GetInt64(11));
+            releaseTime = reader.GetString(12);
         }
 
         if (totalBytes < 0)
@@ -202,6 +216,8 @@ public sealed class IndexDatabase
         var downloads = LoadPlanFiles(catalog, planId, cancellationToken);
         var directories = LoadPlanDirectories(planId, cancellationToken);
         var excludes = LoadExtractExcludes(catalog, planId);
+        var classpath = LoadPlanClasspath(planId, cancellationToken);
+        var launchArguments = LoadLaunchArguments(planId, cancellationToken);
         var links = new List<AssetLinkOperation>();
 
         if (selector.Kind == PackageKind.Client)
@@ -251,7 +267,8 @@ public sealed class IndexDatabase
             selector.Kind == PackageKind.Server ? null : platform);
         return new ResolvedPlan(planId, version.Id, version.Key, version.Type, selector.Kind, platform,
             packageId, installId, totalBytes, assetsIndex, assetsMode, assetsRoot, nativeDirectory,
-            downloads, links, normalizedDirectories, excludes);
+            downloads, links, normalizedDirectories, excludes, mainClass, assetsSha1, assetsSize,
+            loggingArgument, loggingPath, javaMajor, releaseTime, classpath, launchArguments);
     }
 
     private List<DownloadItem> LoadPlanFiles(SqliteConnection catalog, int planId, CancellationToken cancellationToken)
@@ -417,6 +434,43 @@ public sealed class IndexDatabase
                 links.Add(new AssetLinkOperation(from, to));
             }
         }
+    }
+
+    private List<string> LoadPlanClasspath(int planId, CancellationToken cancellationToken)
+    {
+        using var launch = SqliteSupport.OpenReadOnly(_index.ShardPath("launch"), "launch shard");
+        using var command = launch.CreateCommand();
+        command.CommandText = "SELECT path FROM plan_classpath WHERE plan_id = $plan ORDER BY ordinal ASC;";
+        command.Parameters.AddWithValue("$plan", planId);
+        using var reader = command.ExecuteReader();
+        var result = new List<string>();
+        while (reader.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.Add(PathSafety.ValidateRelativePath(reader.GetString(0), "plan classpath"));
+        }
+
+        return result;
+    }
+
+    private List<LaunchArgument> LoadLaunchArguments(int planId, CancellationToken cancellationToken)
+    {
+        using var launch = SqliteSupport.OpenReadOnly(_index.ShardPath("launch"), "launch shard");
+        using var command = launch.CreateCommand();
+        command.CommandText = """
+                              SELECT phase,ordinal,value FROM launch_args
+                              WHERE plan_id = $plan ORDER BY phase ASC,ordinal ASC;
+                              """;
+        command.Parameters.AddWithValue("$plan", planId);
+        using var reader = command.ExecuteReader();
+        var result = new List<LaunchArgument>();
+        while (reader.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.Add(new LaunchArgument(reader.GetString(0), reader.GetString(2)));
+        }
+
+        return result;
     }
 
     private List<string> LoadPlanDirectories(int planId, CancellationToken cancellationToken)

@@ -12,7 +12,7 @@ pwsh ./scripts/test.ps1
 Latest result:
 
 ```text
-82 passed, 0 failed, 0 skipped
+83 passed, 0 failed, 0 skipped
 ```
 
 The suite is a self-contained console harness. It creates a real temporary
@@ -22,8 +22,8 @@ SQLite shards from the vendored canonical schemas in `schemas/`, uses a local
 authenticated HTTP forward proxy and redirect fixture, and invokes the built CLI
 as a child process for E2E coverage.
 
-The suite was also run against the packaged 0.4.0 AOT executable copied to a
-writable temporary program root; all 82 tests passed against that binary.
+The suite was also run against the packaged 0.4.1 AOT executable copied to a
+writable temporary program root; all 83 tests passed against that binary.
 
 ## Requirement mapping
 
@@ -32,6 +32,7 @@ writable temporary program root; all 82 tests passed against that binary.
 | Single program-root state | `PortableProgramRootOwnsAllState`, `ManagedStateLivesUnderProgramRoot` |
 | Empty classification fields normalize to `unknown` | `CommandSpecificFilterMatrix`, server platform list/search, `installed` kind/platform/type filters |
 | Program-root manifests | `CustomDirectoryClientAndNormalRemoval`, install assertions, `CorruptManifestStopsInsteadOfBeingIgnored` |
+| Launcher metadata | `LauncherVersionJsonIsGenerated` |
 | Program-root default instances | all install tests; `LegacyResourcesModeMaterializesLinksAndNatives` target assertion |
 | Relative managed `--dir` | `CustomDirectoryClientAndNormalRemoval`, `VersionIdWithSpacesAndQuotedDirInstall` |
 | Absolute managed path rejected | `ManagedAbsoluteTargetIsRejected`, `ManagedAndUnmanagedDirectoryBoundary` |
@@ -74,7 +75,7 @@ writable temporary program root; all 82 tests passed against that binary.
   generated version.
 - **Integration (5):** index update/query, same-shard refresh, corrupt shard
   rollback, empty version-type normalization, missing-index error.
-- **Install (21):** legacy resources, virtual assets, custom relative target,
+- **Install (22):** launcher version JSON generation, legacy resources, virtual assets, custom relative target,
   server, extra-file force remove, missing manifest, marker mismatch, tampered
   path, unmanaged non-empty target refusal, unmanaged program-state refusal,
   shared manifest target refusal, malicious index path, truncated download

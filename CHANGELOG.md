@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file. The project
 uses semantic versioning for release labels.
 
+## 0.4.1
+
+- Added launcher-facing `versions/<version>/<version>.json` generation for
+  client installs, including libraries, asset index, arguments, logging, and
+  native rules derived from the index shards.
+
 ## 0.4.0
 
 - Added a complete source distribution alongside the Windows x64 binary.

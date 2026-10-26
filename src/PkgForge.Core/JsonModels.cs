@@ -147,11 +147,143 @@ public sealed class InstallMarker
     public DateTimeOffset CreatedAtUtc { get; set; }
 }
 
+public sealed class LauncherVersionJson
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Type { get; set; } = string.Empty;
+
+    public string? MainClass { get; set; }
+
+    public string? Assets { get; set; }
+
+    public LauncherAssetIndex? AssetIndex { get; set; }
+
+    public LauncherDownloads? Downloads { get; set; }
+
+    public List<LauncherLibrary> Libraries { get; set; } = [];
+
+    public LauncherArguments? Arguments { get; set; }
+
+    public LauncherLogging? Logging { get; set; }
+
+    public LauncherJavaVersion? JavaVersion { get; set; }
+
+    public int MinimumLauncherVersion { get; set; } = 21;
+
+    public int ComplianceLevel { get; set; } = 1;
+
+    public string ReleaseTime { get; set; } = string.Empty;
+
+    public string Time { get; set; } = string.Empty;
+}
+
+public sealed class LauncherAssetIndex
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Sha1 { get; set; } = string.Empty;
+
+    public long Size { get; set; }
+
+    public long TotalSize { get; set; }
+
+    public string? Url { get; set; }
+}
+
+public sealed class LauncherDownloads
+{
+    public LauncherDownloadFile? Client { get; set; }
+}
+
+public sealed class LauncherLibrary
+{
+    public string Name { get; set; } = string.Empty;
+
+    public LauncherLibraryDownloads? Downloads { get; set; }
+
+    public List<LauncherRule>? Rules { get; set; }
+}
+
+public sealed class LauncherLibraryDownloads
+{
+    public LauncherDownloadFile? Artifact { get; set; }
+}
+
+public sealed class LauncherDownloadFile
+{
+    public string? Path { get; set; }
+
+    public string Sha1 { get; set; } = string.Empty;
+
+    public long Size { get; set; }
+
+    public string Url { get; set; } = string.Empty;
+}
+
+public sealed class LauncherRule
+{
+    public string Action { get; set; } = "allow";
+
+    public LauncherOs? Os { get; set; }
+}
+
+public sealed class LauncherOs
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed class LauncherArguments
+{
+    public List<string> Game { get; set; } = [];
+
+    public List<string> Jvm { get; set; } = [];
+
+    [JsonPropertyName("default-user-jvm")]
+    public List<LauncherArgumentValue> DefaultUserJvm { get; set; } = [];
+}
+
+public sealed class LauncherArgumentValue
+{
+    public List<string> Value { get; set; } = [];
+}
+
+public sealed class LauncherLogging
+{
+    public LauncherLogClient? Client { get; set; }
+}
+
+public sealed class LauncherLogClient
+{
+    public string Argument { get; set; } = string.Empty;
+
+    public LauncherLogFile File { get; set; } = new();
+
+    public string Type { get; set; } = "log4j2-xml";
+}
+
+public sealed class LauncherLogFile
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Sha1 { get; set; } = string.Empty;
+
+    public long Size { get; set; }
+
+    public string Url { get; set; } = string.Empty;
+}
+
+public sealed class LauncherJavaVersion
+{
+    public int MajorVersion { get; set; }
+}
+
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true,
     WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(LauncherVersionJson))]
 [JsonSerializable(typeof(IndexManifest))]
 [JsonSerializable(typeof(IndexState))]
 [JsonSerializable(typeof(VerifiedBundle))]
